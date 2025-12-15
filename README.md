@@ -71,6 +71,55 @@ Organizations deploying LLMs face a combinatorial explosion of choices:
 
 Each combination has unique characteristics for memory requirements, tensor parallelism, cost efficiency, and failure modes. This platform provides **battle-tested configurations** for every viable combination, eliminating months of trial-and-error.
 
+### Quick Start by Role
+
+| If you are a... | Start Here | Then Read | Deep Dive |
+|-----------------|------------|-----------|-----------|
+| **Platform Engineer** | [§7 Infrastructure Tiers](#7-infrastructure-tiers) | [9.1](09_inference_serving/9.1_inference_engine_selection_guide.md), [9.2](09_inference_serving/9.2_serving_architecture_patterns_guide.md) | [10.1](10_monitoring_observability/10.1_llm_monitoring_strategy_guide.md), [13.1](13_operations_reliability/13.1_incident_response_guide.md) |
+| **ML Engineer** | [§5 Model Tiers](#5-model-tier-specifications) | [6.1](06_model_optimization/6.1_quantization_guide.md), [7.1](07_rag_pipeline/7.1_vector_database_guide.md) | [5.1](05_evaluation_testing/5.1_llm_evaluation_framework.md), [3.1](03_fine_tuning/3.1_supervised_fine_tuning.md) |
+| **DevOps/SRE** | [§10 Deployment](#10-deployment-patterns) | [10.1](10_monitoring_observability/10.1_llm_monitoring_strategy_guide.md), [13.5](13_operations_reliability/13.5_operational_runbooks_guide.md) | [13.1](13_operations_reliability/13.1_incident_response_guide.md), [13.2](13_operations_reliability/13.2_disaster_recovery_guide.md) |
+| **Security/Compliance** | [§13 Security](#13-security--compliance) | [11.1](11_security_governance/11.1_llm_security_guide.md), [11.2](11_security_governance/11.2_pii_data_privacy_guide.md) | [11.3](11_security_governance/11.3_compliance_framework_guide.md), [11.5](11_security_governance/11.5_access_control_authentication_guide.md) |
+| **Cost/Finance** | [§12 Cost](#12-cost-optimization) | [14.1](14_cost_capacity_management/14.1_total_cost_ownership_guide.md), [14.2](14_cost_capacity_management/14.2_cloud_cost_optimization_guide.md) | [14.3](14_cost_capacity_management/14.3_gpu_infrastructure_optimization_guide.md), [10.4](10_monitoring_observability/10.4_cost_monitoring_optimization_guide.md) |
+
+### Implementation Sequence
+
+For end-to-end deployment, follow this order:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│  1. DATA & TRAINING        2. OPTIMIZATION         3. SERVING & RAG            │
+│  ───────────────────       ───────────────         ────────────────            │
+│  01_data_pipeline/    →    06_model_optimization/  →  09_inference_serving/    │
+│  02_model_training/   →    05_evaluation_testing/  →  07_rag_pipeline/         │
+│  03_fine_tuning/                                                               │
+│  04_alignment_safety/                                                          │
+│                                                                                 │
+│  4. OPERATIONS             5. GOVERNANCE           6. SCALE                    │
+│  ─────────────             ──────────              ─────                       │
+│  10_monitoring/       →    11_security/        →   14_cost_management/         │
+│  08_mlops_lifecycle/  →    12_developer_exp/   →   15_migration/               │
+│  13_operations/                                                                │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Recommended reading order for full understanding:**
+1. **Foundation**: 1.1 → 2.2 → 2.3 (Data + Architecture + Distributed Training)
+2. **Model Prep**: 3.1 → 6.1 → 6.4 (Fine-tuning + Quantization + Speculative Decoding)
+3. **RAG Core**: 7.1 → 7.2 → 7.3 → 7.4 (Vector DB → Embeddings → Chunking → Retrieval)
+4. **Deployment**: 9.1 → 9.2 → 9.3 (Engine Selection → Architecture → API Design)
+5. **Operations**: 10.1 → 13.1 → 13.5 (Monitoring → Incident Response → Runbooks)
+
+### Configuration Quick Reference
+
+| Your Scenario | Model Tier | Recommended GPU | Infrastructure | Key Docs |
+|---------------|------------|-----------------|----------------|----------|
+| **Fast prototyping** | S (2B) | L40S / RTX 4090 | Serverless | [9.1](09_inference_serving/9.1_inference_engine_selection_guide.md), [7.1](07_rag_pipeline/7.1_vector_database_guide.md) |
+| **Production RAG** | M (8-20B) | A100 / L40S | GPU-Native | [9.2](09_inference_serving/9.2_serving_architecture_patterns_guide.md), [7.4](07_rag_pipeline/7.4_retrieval_reranking_guide.md), [10.1](10_monitoring_observability/10.1_llm_monitoring_strategy_guide.md) |
+| **Enterprise reasoning** | L (70B) | H100×2 | Hyperscaler | [2.3](02_model_training/2.3_distributed_training_infrastructure.md), [6.1](06_model_optimization/6.1_quantization_guide.md), [11.1](11_security_governance/11.1_llm_security_guide.md) |
+| **Frontier/Research** | XL (405B) | H100×8 | On-Premises | [2.3](02_model_training/2.3_distributed_training_infrastructure.md), [13.3](13_operations_reliability/13.3_capacity_planning_guide.md), [14.3](14_cost_capacity_management/14.3_gpu_infrastructure_optimization_guide.md) |
+| **Cost-optimized** | M (8B) | L40S | On-Premises | [14.1](14_cost_capacity_management/14.1_total_cost_ownership_guide.md), [14.2](14_cost_capacity_management/14.2_cloud_cost_optimization_guide.md) |
+| **HIPAA/Compliance** | Any | Any | Hyperscaler/On-Prem | [11.3](11_security_governance/11.3_compliance_framework_guide.md), [11.2](11_security_governance/11.2_pii_data_privacy_guide.md) |
+
 ---
 
 ## 2. Problem Definition
@@ -2614,115 +2663,121 @@ This PRD is supported by a comprehensive documentation repository containing **6
 ### Repository Layout
 
 ```
-multicloud-rag-platform/
-├── 01_platform_overview/
-│   ├── 1.1_executive_summary.md
-│   ├── 1.2_architecture_overview.md
-│   └── 1.3_quick_start_guide.md
+llm-deployment-strat/
 │
-├── 02_architecture_design/
-│   ├── 2.1_system_architecture_guide.md
-│   ├── 2.2_component_design_specifications.md
-│   ├── 2.3_api_design_guidelines.md
-│   └── 2.4_data_architecture_guide.md
+├── 01_data_pipeline/                    # Data preparation & quality
+│   ├── 1.1_data_collection_sourcing.md
+│   ├── 1.2_data_cleaning_preprocessing.md
+│   ├── 1.3_data_labeling_annotation.md
+│   ├── 1.4_data_versioning_lineage.md
+│   ├── 1.5_synthetic_data_generation.md
+│   └── 1.6_data_quality_assurance.md
 │
-├── 03_llm_integration/
-│   ├── 3.1_llm_provider_integration_guide.md
-│   ├── 3.2_model_serving_infrastructure_guide.md
-│   ├── 3.3_model_selection_criteria_guide.md
-│   ├── 3.4_prompt_management_guide.md
-│   └── 3.5_inference_optimization_guide.md
+├── 02_model_training/                   # Training infrastructure
+│   ├── 2.1_tokenizer_training_selection.md
+│   ├── 2.2_model_architecture_selection.md
+│   ├── 2.3_distributed_training_infrastructure.md
+│   ├── 2.4_pretraining_data_mix_curriculum.md
+│   ├── 2.5_training_monitoring_debugging.md
+│   └── 2.6_ray_train_guide.md
 │
-├── 04_vector_embedding/
-│   ├── 4.1_vector_database_guide.md
-│   ├── 4.2_embedding_strategy_guide.md
-│   ├── 4.3_indexing_strategies_guide.md
-│   ├── 4.4_similarity_search_guide.md
-│   └── 4.5_vector_operations_guide.md
+├── 03_fine_tuning/                      # Model customization
+│   ├── 3.1_supervised_fine_tuning.md
+│   ├── 3.2_parameter_efficient_fine_tuning.md
+│   ├── 3.3_domain_adaptation.md
+│   └── 3.4_continued_pretraining.md
 │
-├── 05_data_pipeline/
-│   ├── 5.1_data_ingestion_guide.md
-│   ├── 5.2_document_processing_guide.md
-│   ├── 5.3_chunking_strategies_guide.md
-│   ├── 5.4_metadata_management_guide.md
-│   └── 5.5_data_quality_guide.md
+├── 04_alignment_safety/                 # Safety & alignment
+│   ├── 4.1_rlhf_guide.md
+│   ├── 4.2_constitutional_ai_rlaif.md
+│   ├── 4.3_safety_evaluation_red_teaming.md
+│   └── 4.4_bias_fairness_evaluation.md
 │
-├── 06_multi_cloud_infrastructure/
-│   ├── 6.1_cloud_provider_guide.md
-│   ├── 6.2_kubernetes_deployment_guide.md
-│   ├── 6.3_networking_guide.md
-│   ├── 6.4_storage_solutions_guide.md
-│   └── 6.5_infrastructure_as_code_guide.md
+├── 05_evaluation_testing/               # Model evaluation
+│   ├── 5.1_llm_evaluation_framework.md
+│   ├── 5.2_benchmark_selection_interpretation.md
+│   ├── 5.3_llm_as_judge_evaluation.md
+│   └── 5.4_human_evaluation_protocol.md
 │
-├── 07_retrieval_systems/
-│   ├── 7.1_retrieval_architecture_guide.md
-│   ├── 7.2_query_processing_guide.md
-│   ├── 7.3_reranking_strategies_guide.md
-│   ├── 7.4_hybrid_search_guide.md
-│   └── 7.5_context_assembly_guide.md
+├── 06_model_optimization/               # Inference optimization
+│   ├── 6.1_quantization_guide.md
+│   ├── 6.2_pruning_sparsity_guide.md
+│   ├── 6.3_knowledge_distillation_guide.md
+│   └── 6.4_speculative_decoding_guide.md
 │
-├── 08_orchestration_workflows/
-│   ├── 8.1_workflow_engine_guide.md
-│   ├── 8.2_chain_patterns_guide.md
-│   ├── 8.3_agent_framework_guide.md
-│   └── 8.4_async_processing_guide.md
+├── 07_rag_pipeline/                     # RAG implementation
+│   ├── 7.1_vector_database_guide.md
+│   ├── 7.2_embedding_model_guide.md
+│   ├── 7.3_chunking_strategies_guide.md
+│   ├── 7.4_retrieval_reranking_guide.md
+│   ├── 7.5_rag_evaluation_guide.md
+│   └── 7.6_advanced_rag_patterns_guide.md
 │
-├── 09_evaluation_testing/
-│   ├── 9.1_evaluation_framework_guide.md
-│   ├── 9.2_benchmark_guide.md
-│   ├── 9.3_ab_testing_guide.md
-│   └── 9.4_quality_metrics_guide.md
+├── 08_mlops_lifecycle/                  # MLOps & CI/CD
+│   ├── 8.1_model_registry_guide.md
+│   ├── 8.2_experiment_tracking_guide.md
+│   ├── 8.3_model_versioning_artifacts_guide.md
+│   ├── 8.4_feature_store_llms_guide.md
+│   └── 8.5_llm_cicd_pipeline_guide.md
 │
-├── 10_observability_monitoring/
-│   ├── 10.1_monitoring_architecture_guide.md
-│   ├── 10.2_logging_guide.md
-│   ├── 10.3_tracing_guide.md
-│   └── 10.4_alerting_guide.md
+├── 09_inference_serving/                # Production serving
+│   ├── 9.1_inference_engine_selection_guide.md
+│   ├── 9.2_serving_architecture_patterns_guide.md
+│   └── 9.3_api_design_llm_services_guide.md
 │
-├── 11_security_governance/
-│   ├── 11.1_security_architecture_guide.md
-│   ├── 11.2_data_privacy_guide.md
+├── 10_monitoring_observability/         # Monitoring & logging
+│   ├── 10.1_llm_monitoring_strategy_guide.md
+│   ├── 10.2_llm_logging_tracing_guide.md
+│   ├── 10.3_model_quality_monitoring_guide.md
+│   └── 10.4_cost_monitoring_optimization_guide.md
+│
+├── 11_security_governance/              # Security & compliance
+│   ├── 11.1_llm_security_guide.md
+│   ├── 11.2_pii_data_privacy_guide.md
 │   ├── 11.3_compliance_framework_guide.md
 │   ├── 11.4_model_governance_guide.md
-│   └── 11.5_access_control_guide.md
+│   └── 11.5_access_control_authentication_guide.md
 │
-├── 12_developer_experience/
+├── 12_user_developer_experience/        # Developer tools
 │   ├── 12.1_prompt_engineering_guide.md
-│   ├── 12.2_sdk_reference_guide.md
-│   ├── 12.3_api_documentation_guide.md
-│   └── 12.4_user_feedback_integration_guide.md
+│   ├── 12.2_sdk_client_library_guide.md
+│   ├── 12.3_developer_documentation_guide.md
+│   └── 12.4_user_feedback_iteration_guide.md
 │
-├── 13_operations_reliability/
+├── 13_operations_reliability/           # Operations & SRE
 │   ├── 13.1_incident_response_guide.md
 │   ├── 13.2_disaster_recovery_guide.md
 │   ├── 13.3_capacity_planning_guide.md
 │   ├── 13.4_on_call_practices_guide.md
 │   └── 13.5_operational_runbooks_guide.md
 │
-├── 14_cost_capacity_management/
+├── 14_cost_capacity_management/         # Cost optimization
 │   ├── 14.1_total_cost_ownership_guide.md
 │   ├── 14.2_cloud_cost_optimization_guide.md
 │   └── 14.3_gpu_infrastructure_optimization_guide.md
 │
-└── 15_migration_integration/
-    ├── 15.1_model_migration_guide.md
-    ├── 15.2_data_migration_guide.md
-    └── 15.3_system_integration_guide.md
+├── 15_migration_integration/            # Migration & integration
+│   ├── 15.1_model_migration_guide.md
+│   ├── 15.2_data_migration_guide.md
+│   └── 15.3_system_integration_guide.md
+│
+├── MultiCloud_RAG_Complete_Matrix_v3.docx  # 96-config detailed matrix
+└── README.md                               # This document (PRD)
 ```
 
 ### Document Mapping to This PRD
 
-| PRD Section | Detailed Documents |
-|-------------|-------------------|
-| Architecture | 2.1, 2.2, 2.3, 2.4 |
-| Model Tiers | 3.1, 3.2, 3.3, 3.5 |
-| GPU/Infrastructure | 6.1, 6.2, 6.5, 14.3 |
-| RAG Pipeline | 7.1, 7.2, 7.3, 7.4, 7.5 |
-| Scheduling | 8.1, 8.4, 13.3 |
-| Deployment | 6.2, 6.5, 15.3 |
-| Observability | 10.1, 10.2, 10.3, 10.4 |
-| Cost | 14.1, 14.2, 14.3 |
-| Security | 11.1, 11.2, 11.3, 11.5 |
+| PRD Section | Key Implementation Docs |
+|-------------|------------------------|
+| Architecture (§3) | [2.2](02_model_training/2.2_model_architecture_selection.md), [2.3](02_model_training/2.3_distributed_training_infrastructure.md), [9.2](09_inference_serving/9.2_serving_architecture_patterns_guide.md) |
+| Model Tiers (§5) | [6.1](06_model_optimization/6.1_quantization_guide.md), [6.4](06_model_optimization/6.4_speculative_decoding_guide.md), [3.1](03_fine_tuning/3.1_supervised_fine_tuning.md) |
+| GPU/Infrastructure (§6-7) | [9.1](09_inference_serving/9.1_inference_engine_selection_guide.md), [14.3](14_cost_capacity_management/14.3_gpu_infrastructure_optimization_guide.md), [2.3](02_model_training/2.3_distributed_training_infrastructure.md) |
+| RAG Pipeline (§8) | [7.1](07_rag_pipeline/7.1_vector_database_guide.md), [7.2](07_rag_pipeline/7.2_embedding_model_guide.md), [7.4](07_rag_pipeline/7.4_retrieval_reranking_guide.md), [7.6](07_rag_pipeline/7.6_advanced_rag_patterns_guide.md) |
+| Scheduling (§9) | [8.5](08_mlops_lifecycle/8.5_llm_cicd_pipeline_guide.md), [13.3](13_operations_reliability/13.3_capacity_planning_guide.md) |
+| Deployment (§10) | [9.1](09_inference_serving/9.1_inference_engine_selection_guide.md), [9.2](09_inference_serving/9.2_serving_architecture_patterns_guide.md), [15.3](15_migration_integration/15.3_system_integration_guide.md) |
+| Observability (§11) | [10.1](10_monitoring_observability/10.1_llm_monitoring_strategy_guide.md), [10.2](10_monitoring_observability/10.2_llm_logging_tracing_guide.md), [10.3](10_monitoring_observability/10.3_model_quality_monitoring_guide.md) |
+| Cost (§12) | [14.1](14_cost_capacity_management/14.1_total_cost_ownership_guide.md), [14.2](14_cost_capacity_management/14.2_cloud_cost_optimization_guide.md), [10.4](10_monitoring_observability/10.4_cost_monitoring_optimization_guide.md) |
+| Security (§13) | [11.1](11_security_governance/11.1_llm_security_guide.md), [11.2](11_security_governance/11.2_pii_data_privacy_guide.md), [11.3](11_security_governance/11.3_compliance_framework_guide.md) |
 
 ---
 
